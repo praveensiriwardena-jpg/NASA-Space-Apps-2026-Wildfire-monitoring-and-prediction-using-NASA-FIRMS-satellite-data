@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#355b83">
+<title>EMBERWATCH :: Wildfire Data Explorer</title>
+<link rel="stylesheet" href="/public/styles.css">
+<link rel="stylesheet" href="/public/retro-2010.css">
+</head>
+<body>
+<div class="app-shell">
+<header class="topbar">
+  <div class="brand"><div class="brandmark"><span>✳</span></div><div><div class="brandname">EMBER<span>WATCH</span><sup> / v1.0</sup></div><div class="brandcaption">WILDFIRE SATELLITE DATA PORTAL | SPACE APPS PROJECT</div></div></div>
+  <div class="header-center"><span class="live-dot"></span><span id="headerMode">HISTORICAL REPLAY</span><span class="header-divider"></span><span>NORTHERN CALIFORNIA</span></div>
+  <div class="topactions"><button class="ghost small" id="importBtn">⇧ &nbsp;Import FIRMS CSVs</button><button class="iconbtn" id="infoBtn" aria-label="Open methodology">ⓘ</button></div>
+</header>
+<div class="data-ribbon"><span class="ribbon-label" id="dataRibbon">USER-SUPPLIED 2025 MODIS</span><span id="dataDetail">2025 MODIS detections loaded from skib.csv. Unverified provenance; not a fire warning system.</span><span class="ribbon-right">Times are UTC · Relative rankings, not probabilities</span></div>
+<div class="workspace">
+  <aside class="left-pane">
+    <div class="section-kicker">MAIN CONTROL PANEL <span>01 / 03</span></div>
+    <h1>Wildfire Activity<br><em>Forecast Explorer</em></h1>
+    <p class="intro">24-hour satellite activity ranking, historical observations and archived sensor statistics.</p>
+    <div class="mode-tabs" role="tablist"><button class="mode active" id="forecastTab">◈ &nbsp;Forecast replay</button><button class="mode" id="historyTab">▦ &nbsp;Fire history</button></div>
+    <section id="forecastControls">
+      <div class="field-heading"><span>REPLAY ISSUE DATE</span><span class="utc">00:00 UTC</span></div>
+      <div class="date-control"><button id="prevDay" aria-label="Previous replay date">‹</button><input type="date" id="issueDate" aria-label="Replay date"><button id="nextDay" aria-label="Next replay date">›</button></div>
+      <div class="date-caption" id="validWindow">Valid for the next 24 hours</div>
+      <div class="step-title"><span class="step-count">01</span><div><b>Make a prediction</b><small>Rank every eligible 10 × 10 km cell</small></div><span class="step-check">✓</span></div>
+      <div class="mini-stat"><div><span>METHOD IN USE</span><b id="methodName">Historical frequency baseline</b></div><span class="status-pill">Causal inputs</span></div>
+      <div class="step-title second"><span class="step-count">02</span><div><b>Reveal the outcome</b><small>Keep the prediction visible</small></div></div>
+      <button class="reveal-btn" id="revealBtn"><span id="revealIcon">◉</span><span id="revealText">Reveal what happened</span><span>↗</span></button>
+      <p class="hint" id="revealHint">Observed events stay hidden until you reveal them.</p>
+      <div id="dayResults" class="day-results hidden"></div>
+    </section>
+    <section id="historyControls" class="hidden">
+      <div class="field-heading">SHOW DETECTIONS FROM</div>
+      <div class="segmented" role="group" aria-label="Sensor"><button class="sensor-btn active" data-sensor="both">Combined</button><button class="sensor-btn" data-sensor="m">MODIS</button><button class="sensor-btn" data-sensor="v">VIIRS</button></div>
+      <p class="tiny">Each 10 km cell counts once per UTC day. If VIIRS is missing, the series shows MODIS only; not hectares burned.</p>
+      <div class="history-focus"><span>SELECTED PERIOD</span><b id="historyPeriod">All of 2025</b><button class="linklike" id="clearPeriod">Clear filter ×</button></div>
+      <button class="outline-wide" id="exportCsv">↓ Export calendar CSV</button>
+    </section>
+    <div class="left-bottom"><span class="green-dot"></span> Works with cached data · No API key required for demo<div class="source-caption" id="coverageText">Coverage unknown · Satellite non-detections ≠ no fire</div></div>
+  </aside>
+  <main class="main-pane">
+    <div class="map-header"><div><div class="map-title">NORTHERN CALIFORNIA <span class="map-subtitle">/ 10 KM GRID</span></div><div class="map-desc" id="mapSubtitle">Select a cell for its drivers. Drag the rectangle to change the study area.</div></div><div class="map-actions"><button class="map-action" id="drawArea" title="Draw a new rectangular region">▢ <span>Draw area</span></button><button class="map-action" id="resetArea" title="Reset selected area">↺ <span>Reset</span></button></div></div>
+    <div class="map-frame" id="mapFrame">
+      <div class="fallback-map" id="fallbackMap"><span class="fallback-state">CALIFORNIA</span><span class="fallback-city city-r">Redding</span><span class="fallback-city city-c">Chico</span><span class="fallback-city city-s">Sacramento</span><span class="fallback-city city-w">Eureka</span><span class="terrain-line t1"></span><span class="terrain-line t2"></span><span class="terrain-line t3"></span><span class="highway">I-5</span></div>
+      <div class="tile-layer" id="tileLayer"></div>
+      <svg id="mapSvg" class="map-svg" aria-label="Grid map over Northern California"><g id="gridShapes"></g><g id="activityShapes"></g><g id="topShapes"></g><g id="selectionShapes"></g><g id="outcomeShapes"></g></svg>
+      <div class="map-floating top-left"><span class="map-eyebrow"><span class="blink"></span> <span id="mapStateLabel">REPLAY PREDICTION</span></span><strong id="floatingDate">30 SEP 2025 · 00:00 UTC</strong><span id="floatingSub">24 hour forecast · historical only</span></div>
+      <div class="zoom-controls"><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomOut" aria-label="Zoom out">−</button></div>
+      <div class="map-bottom-left"><span id="mapCount">— eligible cells</span><span class="map-bullet">•</span><span>EPSG:3310</span></div>
+      <div class="map-attribution" id="mapAttribution">Map grid: EPSG:3310 · 10 km</div>
+      <div class="legend"><span class="legend-title">RELATIVE RISK RANK</span><div class="legend-strip"></div><div class="legend-ends"><span>Lower</span><span>Higher</span></div><div class="legend-observed hidden" id="observedLegend"><span class="event-key"></span>First-detected activity</div></div>
+      <div class="draw-hint hidden" id="drawHint">Draw a rectangle on the map to define a new area · ESC to cancel</div>
+    </div>
+    <div class="under-map"><div class="disclaimer"><span class="disclaimer-icon">ⓘ</span><span><strong id="dataModeCaption">Historical replay — not a live wildfire forecast.</strong> <span id="inputNotice">Inputs through the previous day only. Weather, fuel and incident records not supplied.</span></span></div><div class="keyboard-note">Select a cell to inspect →</div></div>
+    <div class="bottom-section">
+      <div class="section-header"><div><div class="section-kicker">HISTORICAL ACTIVITY <span>02 / 03</span></div><h2>Fire activity calendar <span class="thin" id="calendarYear">2025</span></h2><p>Active cell-days by month · updates with your selected region</p></div><button class="linklike" id="jumpHistory">Explore sensors ↗</button></div>
+      <div class="calendar-wrap"><div id="calendar" class="calendar"></div><div class="calendar-key"><span><i class="scale s0"></i>0 detected</span><span><i class="scale s1"></i>Low</span><span><i class="scale s2"></i>Moderate</span><span><i class="scale s3"></i>High</span><span class="calendar-foot">Coverage completeness unavailable</span></div></div>
+      <div id="dailyDetail" class="daily-detail hidden"></div>
+      <div class="section-header comparison-heading"><div><div class="section-kicker">SENSOR HARMONIZATION <span>03 / 03</span></div><h2>MODIS / VIIRS sensor comparison</h2><p>Same 10 km cell and UTC day, not exact coincident satellite pixels.</p></div></div>
+      <div class="sensor-cards"><div class="sensor-card"><span class="sensor-mark modis">M</span><div><div class="sensor-name">MODIS C6.1</div><b id="modisCount">—</b><span class="sensor-caption">active cell-days</span></div></div><div class="sensor-card"><span class="sensor-mark viirs">V</span><div><div class="sensor-name">VIIRS NOAA-21</div><b id="viirsCount">—</b><span class="sensor-caption" id="viirsCaption">VIIRS file not supplied</span></div></div><div class="sensor-card combined"><span class="sensor-mark combined-mark">∪</span><div><div class="sensor-name" id="combinedName">Available data</div><b id="combinedCount">—</b><span class="sensor-caption">active cell-days</span></div></div></div>
+      <div class="agreement"><p class="tiny" id="sensorAvailability">Sensor comparison requires a VIIRS CSV. MODIS data is already loaded.</p><div class="agreement-head"><b>Overlap in time & space</b><span id="agreementNote">Counts for selected region / period</span></div><div class="stacked-bar" id="agreementBar"></div><div class="agreement-legend"><span><i class="dot dm"></i>MODIS only <b id="onlyModis">0</b></span><span><i class="dot dv"></i>VIIRS only <b id="onlyViirs">0</b></span><span><i class="dot db"></i>Both <b id="bothCount">0</b></span></div></div>
+    </div>
+  </main>
+  <aside class="right-pane">
+    <div class="right-heading"><span>REGION INTELLIGENCE</span><span class="panel-spark">✳</span></div>
+    <div class="panel-block"><span class="metric-label">SELECTED STUDY AREA</span><div class="big-stat"><strong id="eligibleCount">—</strong><span>eligible<br>grid cells</span></div><div class="stat-foot" id="areaKm">— km² · 10 × 10 km each</div><div class="side-rule"></div><div class="metric-label">TOP-RANKED CELLS</div><div id="topCells" class="top-cell-list"><div class="skeleton"></div></div></div>
+    <div class="panel-block inspector" id="cellInspector"><div class="inspector-header"><span>SELECTED CELL</span><button id="clearCell" class="linklike">Clear ×</button></div><div id="cellEmpty" class="cell-empty"><div class="inspector-placeholder">⌖</div><b>Find a signal</b><span>Click any coloured square on the map to see why it received its ranking.</span></div><div id="cellDetail" class="hidden"></div></div>
+    <div class="panel-block performance"><div class="panel-perf-heading"><span class="metric-label">HELD-OUT TRACK RECORD</span><span class="perf-period" id="testPeriod">2025 TEST</span></div><div class="big-performance" id="testRecall">—<small>%</small></div><p class="perf-caption">of first-detected events were inside the top 10% of cells <strong>on later test days</strong></p><div class="perf-baseline"><span>Historical baseline</span><b id="baselineRecall">—</b></div><div class="perf-baseline"><span>Experimental logistic (not shipped)</span><b id="candidateRecall">—</b></div><div class="perf-baseline"><span>Events captured</span><b id="testCaptured">—</b></div><div class="perf-baseline"><span>Test dates</span><b id="testDays">—</b></div><div class="tiny caution">Satellite first detection ≠ ignition. Results are for the selected region; the dataset label above applies to every metric.</div></div>
+    <div class="right-foot"><div class="method-icon">≋</div><div><b>Data processing information</b><p>Every prediction is timestamped. No future observations are used as predictors.</p><button id="openMethod" class="text-action">See methodology →</button></div></div>
+  </aside>
+</div>
+</div>
+<div class="modal-backdrop hidden" id="modalBackdrop" role="presentation"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><div class="modal-top"><h2 id="modalTitle">Methodology</h2><button class="iconbtn" id="closeModal" aria-label="Close dialog">×</button></div><div id="modalContent"></div></div></div>
+<div class="toast hidden" id="toast"></div>
+<script src="/public/app.js"></script>
+</body></html>
